@@ -1,0 +1,11 @@
+student_id,first_name,last_name,email,term,due_date,total_fees_usd,paid_to_date_usd,balance_usd
+10973,Lucas,Wilson,lucas.wilson10973@sjsu.edu,Fall 2025,2026-04-01,6263,5275,988
+10371,Olivia,Martinez,olivia.martinez10371@sjsu.edu,Spring 2026,2026-04-01,4022,3040,982
+10737,Lucas,Lee,lucas.lee10737@sjsu.edu,Fall 2025,2026-04-02,6270,4618,1652
+10101,Abigail,Patel,abigail.patel10101@sjsu.edu,Spring 2026,2026-04-02,6265,4801,1464
+10938,Elijah,Harris,elijah.harris10938@sjsu.edu,Fall 2025,2026-04-04,7364,5487,1877
+10902,Abigail,Brown,abigail.brown10902@sjsu.edu,Fall 2025,2026-04-05,7582,6814,768
+10811,Abigail,Lee,abigail.lee10811@sjsu.edu,Spring 2026,2026-04-06,7538,4960,2578
+10076,Emma,Clark,emma.clark10076@sjsu.edu,Fall 2025,2026-04-06,5017,3355,1662
+10280,Abigail,Harris,abigail.harris10280@sjsu.edu,Fall 2025,2026-04-06,4166,3400,766
+10521,Mia,Chen,mia.chen10521@sjsu.edu,Fall 2025,2026-04-09,6508,4607,1901

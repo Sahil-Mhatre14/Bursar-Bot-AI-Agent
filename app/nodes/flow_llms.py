@@ -1,4 +1,4 @@
-from langchain_openai import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 from app.state import State
 
 from app.tools.sqlite_tools import get_students_with_dues, get_student_by_id
@@ -7,8 +7,8 @@ from app.tools.email_tools import send_email
 OUTREACH_TOOLS = [get_students_with_dues, send_email]
 QNA_TOOLS = [get_student_by_id, get_students_with_dues]
 
-outreach_llm = ChatOpenAI(model="gpt-4o-mini", temperature=0).bind_tools(OUTREACH_TOOLS)
-qna_llm = ChatOpenAI(model="gpt-4o-mini", temperature=0).bind_tools(QNA_TOOLS)
+outreach_llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0).bind_tools(OUTREACH_TOOLS)
+qna_llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0).bind_tools(QNA_TOOLS)
 
 OUTREACH_SYSTEM = """You are BursarBot's outreach assistant.
 

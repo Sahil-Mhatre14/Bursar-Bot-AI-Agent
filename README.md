@@ -8,7 +8,7 @@ An agentic AI system to streamline tasks in a university bursar office.
 
 - **Agentic workflow**: Uses LangGraph and LangChain to route between Q&A, outreach, and summarization agents.
 - **SQLite-backed data**: Reads student fee/dues data from a local SQLite database.
-- **Email outreach**: Sends reminder emails via SendGrid (with a safety override address for demos).
+- **Email outreach**: Sends reminder emails via native Python SMTP (with a safety override address for demos).
 - **CLI interface**: Simple terminal chat loop in `main.py`.
 
 ---
@@ -17,7 +17,7 @@ An agentic AI system to streamline tasks in a university bursar office.
 
 - **Python**: 3.10 or newer
 - **Virtual environment** (recommended): `venv`, `conda`, or similar
-- **SendGrid account** (only required if you want email sending to work)
+- **Gmail account with App Password** (only required if you want email sending to work)
 - **OpenAI (or compatible) API access** for `OPENAI_API_KEY`
 
 ---
@@ -58,7 +58,7 @@ Create a `.env` file in the project root (same folder as `main.py`). **Do not co
 
 #### Core model + tracing keys
 
-- **`OPENAI_API_KEY`**: API key for OpenAI (or equivalent provider. E.g: Gemini).
+- **`GEMINI_API_KEY`**: API key for Google Gemini (required for AI functionality).
 - **`LANGCHAIN_TRACING_V2`**: set to `true` to enable LangSmith tracing in order to see logs about tool calls, token usage, cost incured in a call, etc.
 - **`LANGCHAIN_PROJECT`**: name of the LangSmith project.
 - **`LANGSMITH_API_KEY`**: required only if you are using LangSmith.
@@ -66,7 +66,7 @@ Create a `.env` file in the project root (same folder as `main.py`). **Do not co
 Example:
 
 ```bash
-OPENAI_API_KEY=your-openai-key-here
+GEMINI_API_KEY=your-gemini-api-key-here
 LANGCHAIN_TRACING_V2=true
 LANGCHAIN_PROJECT=bursarbot
 LANGSMITH_API_KEY=your-langsmith-key-here
@@ -86,19 +86,26 @@ BURSARBOT_DB_PATH=/absolute/or/relative/path/to/bursarbot.db
 Make sure your database is populated.
 You can use any helper scripts in the repo (`populate_sqlite.py`), if needed.
 
-#### Email / SendGrid configuration
+#### Email / SMTP configuration
 
 These are used by `app/tools/email_tools.py`:
 
-- **`SENDGRID_API_KEY`**: Your SendGrid API key.
-- **`BURSARBOT_EMAIL_FROM`**: The verified sender email in SendGrid (must be verified in your SendGrid account).
+- **`BURSARBOT_EMAIL_FROM`**: Your Gmail address.
+- **`BURSARBOT_EMAIL_PASSWORD`**: Your Gmail App Password (not your regular password - see setup instructions below).
 - **`BURSARBOT_EMAIL_OVERRIDE_TO`**: Safety override recipient. All emails will be sent to this address instead of arbitrary user-supplied addresses (for demo).
+
+**Setting up Gmail App Password:**
+1. Go to your Google Account settings
+2. Enable 2-Factor Authentication if not already enabled
+3. Go to Security → App passwords
+4. Generate a new app password for "Mail"
+5. Use this 16-character password as `BURSARBOT_EMAIL_PASSWORD`
 
 Example:
 
 ```bash
-SENDGRID_API_KEY=your-sendgrid-api-key
-BURSARBOT_EMAIL_FROM=your-verified-sender@example.com
+BURSARBOT_EMAIL_FROM=your-gmail@gmail.com
+BURSARBOT_EMAIL_PASSWORD=abcd-efgh-ijkl-mnop
 BURSARBOT_EMAIL_OVERRIDE_TO=your-test-recipient@example.com
 ```
 

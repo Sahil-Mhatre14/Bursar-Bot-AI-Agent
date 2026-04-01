@@ -1,4 +1,4 @@
-from langchain_openai import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 from app.state import State
 from app.schemas import IntentOutput
 
@@ -12,7 +12,7 @@ Classify the user's request into exactly ONE of:
 You MUST return a structured output object.
 """
 
-intent_llm = ChatOpenAI(model="gpt-4o-mini", temperature=0).with_structured_output(IntentOutput)
+intent_llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0).with_structured_output(IntentOutput)
 
 def intent_node(state: State) -> State:
     errors = state.get("errors", [])
