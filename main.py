@@ -1,6 +1,11 @@
 from dotenv import load_dotenv
 load_dotenv()
 
+import os
+import certifi
+# Ensure Python/urllib uses certifi's CA bundle for SSL verification
+os.environ.setdefault("SSL_CERT_FILE", certifi.where())
+
 import uuid
 from langchain_core.messages import HumanMessage
 from app.graph import build_graph
