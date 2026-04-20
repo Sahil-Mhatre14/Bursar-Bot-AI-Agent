@@ -1,0 +1,13 @@
+.git
+.gitignore
+.env
+.venv
+venv
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+reports/
+existing-scripts/
+service-account.json

@@ -1,3 +1,5 @@
 .env
 .venv
 __pycache__
+service-account.json
+existing-scripts/Local_student-info-api.json

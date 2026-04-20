@@ -4,3 +4,6 @@ langchain-core
 pydantic
 python-dotenv
 pandas
+google-cloud-bigquery
+fastapi
+uvicorn

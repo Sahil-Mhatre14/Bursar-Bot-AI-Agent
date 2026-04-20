@@ -12,11 +12,19 @@ from app.tools.sqlite_tools import (
     get_students_due_next_30_days,
 )
 from app.tools.email_tools import send_email
+from app.tools.bigquery_tools import get_student_balance_bigquery
 from app.nodes.reset import reset_node
 
 
-
-tools_node = ToolNode(tools=[get_students_with_dues, get_student_by_id, get_students_due_next_30_days, send_email])
+tools_node = ToolNode(
+    tools=[
+        get_students_with_dues,
+        get_student_by_id,
+        get_students_due_next_30_days,
+        get_student_balance_bigquery,
+        send_email,
+    ]
+)
 
 
 def route_after_intent(state: State) -> str:

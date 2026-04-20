@@ -86,6 +86,24 @@ BURSARBOT_DB_PATH=/absolute/or/relative/path/to/bursarbot.db
 Make sure your database is populated.
 You can use any helper scripts in the repo (`populate_sqlite.py`), if needed.
 
+#### BigQuery configuration (for real finance data)
+
+For finance questions like "what is my balance?", the agent can query BigQuery.
+
+- **`GOOGLE_APPLICATION_CREDENTIALS`**: Absolute path to your GCP service account JSON (recommended).
+- **`BQ_PROJECT_ID`**: BigQuery project ID (default: `sjsu-it-genai-poc`)
+- **`BQ_DATASET_ID`**: BigQuery dataset ID (default: `student_financials`)
+- **`BQ_FINANCE_TABLE_ID`**: BigQuery finance table (default: `Student_FinancialRecords`)
+
+Example:
+
+```bash
+GOOGLE_APPLICATION_CREDENTIALS=/absolute/path/to/service-account.json
+BQ_PROJECT_ID=sjsu-it-genai-poc
+BQ_DATASET_ID=student_financials
+BQ_FINANCE_TABLE_ID=Student_FinancialRecords
+```
+
 #### Email / SMTP configuration
 
 These are used by `app/tools/email_tools.py`:
@@ -128,5 +146,3 @@ BursarBot (type 'quit' to exit)
 Type messages as if you are a bursar staff member or student; the system will route between Q&A, outreach, and summarization flows as configured in `app/graph.py`. Type `quit` or `exit` to end the session.
 
 ---
-
-
