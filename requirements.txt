@@ -1,9 +1,12 @@
 langgraph
 langchain-google-genai
 langchain-core
+langchain-community
 pydantic
 python-dotenv
 pandas
 google-cloud-bigquery
 fastapi
 uvicorn
+chromadb
+openpyxl

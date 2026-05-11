@@ -1,0 +1,183 @@
+POLICY: PBC502.04 - SJ AR Students Receivables and Aged Receivables
+Revised: May 2024
+By: John Hardin
+
+---
+
+SECTION 1: Generate AR Receivable/Invoice Process
+
+The debt represents tuition, mandatory campus fees, housing, and bookstore charges.
+Charges are initiated by the student when they register for classes through their MySJSU portal.
+The Housing department posts housing charges to student accounts. All charges can be viewed through MySJSU.
+
+SJSU does not invoice students for registration charges. AR receivable is created when a student
+registers for courses and students are responsible for viewing their account on MySJSU for charges
+and payment due date(s).
+
+While SJSU does not invoice students, the Bursar's Office sends out multiple payment reminder
+messages via the PeopleSoft (PS) Messaging process starting approximately seven and two days prior
+to each due date to remind students with balances that they have a balance due.
+
+The messaging will NOT include students who have a fee deferral. They may have a fee deferral from:
+- The Financial Aid and Scholarship Office because they are receiving financial aid, OR
+- The Bursar's Office because they are receiving a waiver or sponsorship.
+
+Payments can be made:
+- Online (preferred method)
+- In-person (cash or checks)
+- By mail
+- Overnight drop box at the Bursar's Office (checks only)
+
+The Bursar's Office oversees the collection of registration and housing charges debt.
+
+---
+
+SECTION 2: Holds - Conditions and Thresholds
+
+Holds are automatically placed by PeopleSoft (PS) on University records beginning the first day
+the balance is past due.
+
+Hold thresholds:
+- For balances greater than $2.00 and less than $350.00: a service indicator is placed restricting DIPLOMAS only.
+- For balances of $350.00 or greater: a service indicator is placed restricting REGISTRATION AND DIPLOMAS.
+
+---
+
+SECTION 3: Aged Receivables Collection Procedures - Due Diligence
+
+The Bursar's Office performs timely collection efforts to resolve aged receivables, in order to
+comply with due diligence per Federal, State, and University guidelines.
+
+Student Account Specialists work the monthly receivables reports that show account balances that
+are 61+ days delinquent. Accounts are divided by alphabetic groups between the Student Account Specialists.
+
+Collection contact timelines:
+- 61-90 days past due: First collection notice sent (CL1)
+- 91-120 days past due: Second collection notice sent (CL2)
+- 121-150 days past due: Final demand notice sent — warns account will go to collection agency if not paid
+
+These collection contacts/messages are sent to students via:
+- PeopleSoft Messaging System
+- Email
+- Paper letter via USPS
+- Phone calls
+
+---
+
+SECTION 4: Collection Agency Referral and Fees
+
+A $20.00 Administrative Fee (late fee) is charged to the account BEFORE the account is referred
+to an outside collection agency.
+
+The Student Account Specialist submits an adjustment sheet internally to the Associate Bursar for
+Student Accts/Collections for approval to have the $20.00 charge added to the student's account
+prior to sending the account to a collection agency.
+
+Accounts are referred to a collection agency after the add/drop period of the following term, if:
+- There is no response to collection efforts, AND
+- The third past due notice (final demand) has been sent.
+
+When an account is sent to a collection agency, a BO4 (Departmental Hold/COLL) service indicator
+is added in PeopleSoft.
+
+Accounts are referred to a collection agency for one year. If attempts with that agency are
+unsuccessful or no assets found, the account is returned and referred to a second collection agency.
+
+---
+
+SECTION 5: Franchise Tax Board (FTB) Submission
+
+Accounts are also submitted to the Franchise Tax Board (FTB) for offsetting of State tax refunds.
+
+Conditions for FTB submission:
+- Occurs yearly in November
+- For past due debts of 100 days or more
+- Does NOT include current term outstanding balance for enrolled students
+- Balance must be $50.00 or greater
+
+---
+
+SECTION 6: Housing Balances
+
+Student Account Specialists coordinate with Housing on outstanding housing balances, i.e.,
+eviction proceedings have been initiated.
+
+Housing generally monitors and performs due diligence on outstanding housing balances while the
+student is currently registered. After Housing collection efforts are exhausted, they send a
+request to the Bursar's Office to send a final demand letter and the account is referred to a
+collection agency as needed.
+
+---
+
+SECTION 7: Uncollectible Accounts (Write-offs)
+
+After three progressive collection calls/messages/letters have been sent, debts that are
+151-days delinquent with no payment or promise to pay will be handled as follows:
+
+Write-off for balances $349.99 or less (BO2-SMWOF):
+- Student Account Specialist prepares an adjustment sheet after the add/drop period of the following term.
+- Submit to Associate Bursar for write-off approval after all in-office due diligence has been met.
+- Place a BO2-SMWOF service indicator.
+- Enter comments on the PS account including: debt amount written-off, debt type, and term the debt originated.
+
+Write-off for balances $350.00 to $9,999.99 (B06-WROFF):
+- Account must be returned from a second collection agency as uncollectible.
+- Student Account Specialist prepares a write-off request and submits to Associate Bursar for 1st approval.
+- Associate Bursar sends to Sr AVP for Finance and Business Services for final approval.
+- A B06-WROFF service indicator is placed on the account.
+
+Write-off for balances $10,000.00 and greater (B06-WROFF):
+- Student Account Specialist prepares write-off request.
+- Submit to Associate Bursar for 1st approval.
+- Associate Bursar sends to Sr AVP for Finance and Business Services for 2nd approval.
+- VP of Finance gives final approval.
+- A B06-WROFF service indicator is placed on the account.
+
+---
+
+SECTION 8: Service Indicators Reference
+
+B01 - Past due hold restricting diplomas (balance $2.00 - $349.99)
+B02 - Past due hold restricting registration and diplomas (balance $350.00+)
+BO4 / B04 - Departmental Hold/COLL — placed when account sent to collection agency
+B05 - Tuition fee deferral — placed by Bursar, FAO, or Athletics to prevent/remove past due holds
+BO2-SMWOF - Write-off indicator for balances under $350
+B06-WROFF - Write-off indicator for balances $350 and above
+
+---
+
+SECTION 9: Payment Options
+
+Students can pay their balance through:
+- Online (preferred): Credit card, ACH, 529 plan account, international payment via Flywire
+- Mail: Personal check, money order, cashier's check, demand draft
+- In person: Cash, check, money order, cashier's check, demand draft
+- Overnight drop box at the Bursar's Office: Checks only
+
+Online payment portal: MySJSU portal (sjsu.edu/bursar/payment-refunds/pay-now.php)
+
+---
+
+SECTION 10: Contact Information
+
+Bursar's Office phone: 408-924-1601
+Bursar's Office email: student-finance-specialists@sjsu.edu
+Average call time: 10-12 minutes
+
+---
+
+SECTION 11: Exclusions from Collection Outreach
+
+The following students should NOT receive collection notices:
+- Students with a fee deferral from the Financial Aid and Scholarship Office
+- Students with a fee deferral from the Bursar's Office (waiver or sponsorship recipients)
+- Students with a B05 tuition fee deferral service indicator
+
+---
+
+SECTION 12: Legal References
+
+Executive Order 731 - Designation of CFO
+Executive Order 1000 - Delegation of Fiscal Authority and Responsibility
+Section 42381 of Title 5, California Code of Regulation - Allows campus to withhold service as a collection tool
+Assembly Bill No. 1313, Chapter 518

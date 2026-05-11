@@ -13,6 +13,8 @@ def main():
     print("BursarBot (type 'quit' to exit)")
     while True:
         text = input("\nYou: ").strip()
+        if not text:
+            continue
         if text.lower() in {"quit", "exit"}:
             break
 

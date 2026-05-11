@@ -1,41 +1,65 @@
 from langchain_google_genai import ChatGoogleGenerativeAI
 from app.state import State
-
-import re
-from langchain_core.messages import AIMessage
-
-from app.tools.sqlite_tools import get_students_with_dues, get_student_by_id
+from app.tools.sqlite_tools import get_student_by_id
 from app.tools.email_tools import send_email
-from app.tools.bigquery_tools import get_student_balance_bigquery
+from app.tools.bigquery_tools import get_student_balance_bigquery, get_students_past_due_by_bucket
 
-OUTREACH_TOOLS = [get_students_with_dues, send_email]
-QNA_TOOLS = [get_student_by_id, get_students_with_dues, get_student_balance_bigquery]
+OUTREACH_TOOLS = [get_students_past_due_by_bucket, send_email]
+QNA_TOOLS = [get_student_by_id, get_student_balance_bigquery, get_students_past_due_by_bucket]
 
 outreach_llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0).bind_tools(OUTREACH_TOOLS)
 qna_llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0).bind_tools(QNA_TOOLS)
 
-OUTREACH_SYSTEM = """You are BursarBot's outreach assistant.
+OUTREACH_SYSTEM = """You are BursarBot's outreach assistant for SJSU Bursar's Office.
 
-When the user asks to send reminders:
-1) Call get_students_with_dues(limit=..., term=...) to fetch recipients.
-2) For each recipient (MAX 5 unless user specifies a smaller limit), call send_email(to, subject, body).
-   Note: send_email will safely override the recipient to a test inbox.
-3) After sending, summarize how many emails were sent and for which student IDs.
+You help staff manage past-due student accounts. Students are segmented into aging buckets
+based on how many days their balance is past due:
+  - 61-90 days   → First collection notice (CL1)
+  - 91-120 days  → Second collection notice (CL2)
+  - 121-150 days → Final demand notice
+  - >150 days    → Escalation / collection agency territory
+
+When the user asks to fetch, list, or segment students by due date / bucket:
+1) Call get_students_past_due_by_bucket(bucket=..., limit=...).
+   - Pass bucket="61-90", "91-120", "121-150", or ">150" to filter a specific bucket.
+   - Pass bucket=None to get all past-due students across all buckets.
+2) Present results grouped by aging_bucket. For each bucket show:
+   - Count of students
+   - List: student name, student_id, email, amount_due, balance, reason_codes
+3) Clearly label which collection notice tier applies to each bucket.
+
+When the user asks to send emails:
+1) First fetch the relevant students using get_students_past_due_by_bucket.
+2) For each student (MAX 5 unless user specifies), call send_email(to, subject, body).
+   - Use the student's email and name from the fetched data.
+   - Email templates per bucket will be provided later. For now use a professional reminder.
+3) Summarize: how many emails sent, which bucket, which student IDs.
 
 Rules:
-- Do not invent student data. Use tools.
-- Keep the email short and professional.
-- Include: student name, term, and balance due.
+- Never invent student data. Always use tools.
+- Do not email students whose financial_aid_status is "Approved" (fee deferral).
+- Always state which aging bucket you are working on.
+- When tool results include a "report_path" field, always tell the user:
+  "An Excel report has been saved to: <report_path>"
 """
 
-QNA_SYSTEM = """You are BursarBot's QnA assistant.
+QNA_SYSTEM = """You are BursarBot's QnA assistant for SJSU Bursar's Office.
 
-Use tools for data. Do not make up student records.
+Use tools for all data. Never invent student records.
 
-Finance questions:
-- If the user asks about a student's balance / amount due / charges, use get_student_balance_bigquery(student_id=...).
-- If the user doesn't provide a student ID (EMPLID), ask a short follow-up question requesting it.
-- If a tool returns an `error` field, surface it verbatim and suggest the most likely fix (credentials, permissions, project/dataset/table).
+Bucket / listing queries:
+- If the user asks to list, show, or segment past-due students, use get_students_past_due_by_bucket(bucket=..., limit=...).
+  Valid buckets: "61-90", "91-120", "121-150", ">150". Pass bucket=None for all past-due students.
+- Present results grouped by aging_bucket. Show name, student_id, email, amount_due, balance, reason_codes.
+
+Balance / finance queries:
+- If the user asks about a specific student's balance, use get_student_balance_bigquery(student_id=...).
+- If no student ID is provided, ask for the EMPLID first.
+
+General:
+- If a tool returns an error field, surface it clearly and suggest the likely fix.
+- When tool results include a "report_path" field, always tell the user:
+  "An Excel report has been saved to: <report_path>"
 """
 
 def outreach_agent_node(state: State) -> State:
@@ -45,69 +69,5 @@ def outreach_agent_node(state: State) -> State:
 
 def qna_agent_node(state: State) -> State:
     msgs = state["messages"]
-
-    # Finance fast-path:
-    # Balance questions were getting routed to SQLite (dropping leading zeros).
-    # For now we only force BigQuery for balance/amount-due style questions.
-    user_text = ""
-    for m in reversed(msgs):
-        if getattr(m, "type", None) == "human":
-            user_text = m.content or ""
-            break
-        if isinstance(m, dict) and m.get("role") == "user":
-            user_text = m.get("content", "") or ""
-            break
-
-    # Also handle the common follow-up:
-    # User: "what is my balance?" -> Assistant asks for EMPLID -> User replies with only the ID.
-    prev_assistant_text = ""
-    for m in reversed(msgs[:-1]):
-        if getattr(m, "type", None) in {"ai", "assistant"}:
-            prev_assistant_text = m.content or ""
-            break
-        if isinstance(m, dict) and m.get("role") == "assistant":
-            prev_assistant_text = m.get("content", "") or ""
-            break
-
-    is_balance_intent = bool(
-        re.search(r"\b(balance|amount\s+due|due\s+amount|charges?)\b", user_text, flags=re.I)
-        or (
-            re.search(r"\bemplid\b|\bstudent\s+id\b", prev_assistant_text, flags=re.I)
-            and re.search(r"\b(balance|amount\s+due|due\s+amount|charges?)\b", prev_assistant_text, flags=re.I)
-            and re.search(r"\b(\d{6,12})\b", user_text)
-        )
-    )
-
-    if is_balance_intent:
-        m = re.search(r"\b(\d{6,12})\b", user_text)
-        if not m:
-            return {
-                "messages": [
-                    AIMessage(
-                        content="What is the student's ID (EMPLID)? Please include the numeric ID so I can look up the balance."
-                    )
-                ]
-            }
-
-        student_id = m.group(1)
-        # `@tool` wraps this as a StructuredTool, so call via `.invoke`.
-        out = get_student_balance_bigquery.invoke({"student_id": student_id})
-        if out.get("error"):
-            return {
-                "messages": [
-                    AIMessage(
-                        content=f"BigQuery balance lookup failed for {student_id}: {out['error']}"
-                    )
-                ]
-            }
-
-        return {
-            "messages": [
-                AIMessage(
-                    content=f"Current balance for {student_id} is {out.get('balance_formatted', out.get('balance_usd'))}."
-                )
-            ]
-        }
-
     resp = qna_llm.invoke([{"role": "system", "content": QNA_SYSTEM}] + msgs)
     return {"messages": [resp]}

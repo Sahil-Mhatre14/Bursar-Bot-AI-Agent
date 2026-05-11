@@ -5,23 +5,17 @@ from langgraph.prebuilt import ToolNode
 from app.state import State
 from app.nodes.intent import intent_node
 from app.nodes.flow_llms import outreach_agent_node, qna_agent_node
-from app.nodes.summarize import summarize_node
-from app.tools.sqlite_tools import (
-    get_students_with_dues,
-    get_student_by_id,
-    get_students_due_next_30_days,
-)
+from app.tools.sqlite_tools import get_student_by_id
 from app.tools.email_tools import send_email
-from app.tools.bigquery_tools import get_student_balance_bigquery
+from app.tools.bigquery_tools import get_student_balance_bigquery, get_students_past_due_by_bucket
 from app.nodes.reset import reset_node
 
 
 tools_node = ToolNode(
     tools=[
-        get_students_with_dues,
         get_student_by_id,
-        get_students_due_next_30_days,
         get_student_balance_bigquery,
+        get_students_past_due_by_bucket,
         send_email,
     ]
 )
@@ -31,8 +25,6 @@ def route_after_intent(state: State) -> str:
     intent = state.get("intent", "qna")
     if intent == "outreach":
         return "outreach_agent"
-    if intent == "summarize":
-        return "summarize"
     return "qna_agent"
 
 
@@ -72,8 +64,6 @@ def build_graph():
     builder.add_node("outreach_agent", outreach_agent_node)
     builder.add_node("qna_agent", qna_agent_node)
     builder.add_node("tools", tools_node)
-
-    builder.add_node("summarize", summarize_node)
     builder.add_node("finalize", finalize_result)
 
     builder.add_node("reset", reset_node)
@@ -87,7 +77,6 @@ def build_graph():
         {
             "outreach_agent": "outreach_agent",
             "qna_agent": "qna_agent",
-            "summarize": "summarize",
         },
     )
 
@@ -113,8 +102,6 @@ def build_graph():
         {"outreach_agent": "outreach_agent", "qna_agent": "qna_agent"},
     )
 
-
-    builder.add_edge("summarize", "finalize")
 
     builder.add_edge("finalize", END)
 
