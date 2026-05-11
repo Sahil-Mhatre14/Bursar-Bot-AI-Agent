@@ -4,7 +4,7 @@ from langgraph.prebuilt import ToolNode
 
 from app.state import State
 from app.nodes.intent import intent_node
-from app.nodes.flow_llms import outreach_agent_node, qna_agent_node
+from app.nodes.flow_llms import outreach_agent_node, qna_agent_node, student_agent_node
 from app.tools.sqlite_tools import get_student_by_id
 from app.tools.email_tools import send_email
 from app.tools.bigquery_tools import get_student_balance_bigquery, get_students_past_due_by_bucket
@@ -19,6 +19,12 @@ tools_node = ToolNode(
         send_email,
     ]
 )
+
+
+def route_after_reset(state: State) -> str:
+    if state.get("user_role") == "student":
+        return "student_agent"
+    return "intent"
 
 
 def route_after_intent(state: State) -> str:
@@ -53,6 +59,13 @@ def finalize_result(state: State) -> State:
 
     last = msgs[-1]
     content = getattr(last, "content", "")
+
+    if isinstance(content, list):
+        content = " ".join(
+            part.get("text", "") if isinstance(part, dict) else str(part)
+            for part in content
+        )
+
     return {"result": content}
 
 
@@ -63,13 +76,18 @@ def build_graph():
 
     builder.add_node("outreach_agent", outreach_agent_node)
     builder.add_node("qna_agent", qna_agent_node)
+    builder.add_node("student_agent", student_agent_node)
     builder.add_node("tools", tools_node)
     builder.add_node("finalize", finalize_result)
 
     builder.add_node("reset", reset_node)
 
     builder.add_edge(START, "reset")
-    builder.add_edge("reset", "intent")
+    builder.add_conditional_edges(
+        "reset",
+        route_after_reset,
+        {"student_agent": "student_agent", "intent": "intent"},
+    )
 
     builder.add_conditional_edges(
         "intent",
@@ -92,14 +110,26 @@ def build_graph():
         {"tools": "tools", "done": "finalize"},
     )
 
+    builder.add_conditional_edges(
+        "student_agent",
+        needs_tools,
+        {"tools": "tools", "done": "finalize"},
+    )
+
     def route_after_tools(state: State) -> str:
+        if state.get("user_role") == "student":
+            return "student_agent"
         intent = state.get("intent", "qna")
         return "outreach_agent" if intent == "outreach" else "qna_agent"
 
     builder.add_conditional_edges(
         "tools",
         route_after_tools,
-        {"outreach_agent": "outreach_agent", "qna_agent": "qna_agent"},
+        {
+            "outreach_agent": "outreach_agent",
+            "qna_agent": "qna_agent",
+            "student_agent": "student_agent",
+        },
     )
 
 

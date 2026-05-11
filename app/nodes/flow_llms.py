@@ -6,9 +6,11 @@ from app.tools.bigquery_tools import get_student_balance_bigquery, get_students_
 
 OUTREACH_TOOLS = [get_students_past_due_by_bucket, send_email]
 QNA_TOOLS = [get_student_by_id, get_student_balance_bigquery, get_students_past_due_by_bucket]
+STUDENT_TOOLS = [get_student_balance_bigquery]
 
 outreach_llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0).bind_tools(OUTREACH_TOOLS)
 qna_llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0).bind_tools(QNA_TOOLS)
+student_llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0).bind_tools(STUDENT_TOOLS)
 
 OUTREACH_SYSTEM = """You are BursarBot's outreach assistant for SJSU Bursar's Office.
 
@@ -62,6 +64,19 @@ General:
   "An Excel report has been saved to: <report_path>"
 """
 
+STUDENT_SYSTEM_TEMPLATE = """You are BursarBot, a financial assistant for SJSU Bursar's Office.
+
+You are responding to an authenticated student. Their Student ID (EMPLID) is: {user_id}
+
+Rules:
+- You may ONLY answer questions about this student's own account.
+- Always use student_id="{user_id}" when calling any tool. Never use a different student ID.
+- Never discuss other students' records.
+- Display all individual balance records returned by the tool — do not summarize into a single total.
+- If the tool returns a "report_path" field, tell the user an Excel report has been saved there.
+- For questions about policy, payment options, or holds, answer based on your knowledge of SJSU Bursar policy.
+"""
+
 def outreach_agent_node(state: State) -> State:
     msgs = state["messages"]
     resp = outreach_llm.invoke([{"role": "system", "content": OUTREACH_SYSTEM}] + msgs)
@@ -70,4 +85,11 @@ def outreach_agent_node(state: State) -> State:
 def qna_agent_node(state: State) -> State:
     msgs = state["messages"]
     resp = qna_llm.invoke([{"role": "system", "content": QNA_SYSTEM}] + msgs)
+    return {"messages": [resp]}
+
+def student_agent_node(state: State) -> State:
+    msgs = state["messages"]
+    user_id = state.get("user_id", "")
+    system = STUDENT_SYSTEM_TEMPLATE.format(user_id=user_id)
+    resp = student_llm.invoke([{"role": "system", "content": system}] + msgs)
     return {"messages": [resp]}

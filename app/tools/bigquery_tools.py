@@ -1,9 +1,10 @@
 import os
 from datetime import datetime
 from functools import lru_cache
-from typing import Any, Dict, List, Optional
+from typing import Annotated, Any, Dict, List, Optional
 
 from langchain_core.tools import tool
+from langgraph.prebuilt import InjectedState
 
 REPORTS_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "reports")
 
@@ -33,7 +34,10 @@ def _finance_table_fqn() -> str:
 
 
 @tool
-def get_student_balance_bigquery(student_id: str) -> List[Dict[str, Any]]:
+def get_student_balance_bigquery(
+    student_id: str,
+    state: Annotated[dict, InjectedState],
+) -> List[Dict[str, Any]]:
     """
     Fetch all individual balance records for a student from BigQuery by EMPLID.
     Each row in Student_FinancialRecords is returned as a separate balance entry.
@@ -47,6 +51,10 @@ def get_student_balance_bigquery(student_id: str) -> List[Dict[str, Any]]:
         account_term, item_term, item_effective_dt, item_type_cd
     """
     from google.cloud import bigquery
+
+    # Enforce student role — always use the authenticated user_id from state
+    if state.get("user_role") == "student":
+        student_id = state.get("user_id") or student_id
 
     student_id = str(student_id).strip()
     if not student_id:

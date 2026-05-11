@@ -19,7 +19,7 @@ def main():
             break
 
         out = out = graph.invoke(
-            {"messages": [HumanMessage(content=text)], "entities": {}, "errors": []},
+            {"messages": [HumanMessage(content=text)], "entities": {}, "errors": [], "user_role": "admin", "user_id": None},
             config={
                 "configurable": {"thread_id": thread_id},
                 "tags": ["cli", "bursarbot"],

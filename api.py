@@ -23,6 +23,14 @@ class ChatRequest(BaseModel):
         default=None,
         description="Conversation thread/session id. If omitted, a new one is created.",
     )
+    user_role: str = Field(
+        default="admin",
+        description="Role of the caller: 'student' or 'admin'.",
+    )
+    user_id: Optional[str] = Field(
+        default=None,
+        description="EMPLID of the authenticated student. Required when user_role is 'student'.",
+    )
     metadata: Optional[Dict[str, Any]] = Field(
         default=None, description="Optional metadata (e.g., user id, channel)."
     )
@@ -45,7 +53,13 @@ def chat(req: ChatRequest) -> ChatResponse:
     thread_id = req.thread_id or str(uuid.uuid4())
 
     out = graph.invoke(
-        {"messages": [HumanMessage(content=req.message)], "entities": {}, "errors": []},
+        {
+            "messages": [HumanMessage(content=req.message)],
+            "entities": {},
+            "errors": [],
+            "user_role": req.user_role,
+            "user_id": req.user_id,
+        },
         config={
             "configurable": {"thread_id": thread_id},
             "tags": ["api", "bursarbot"],

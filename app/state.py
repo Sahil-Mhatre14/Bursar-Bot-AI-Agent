@@ -7,3 +7,5 @@ class State(TypedDict):
     entities: Dict[str, Any]
     result: Optional[str]
     errors: List[str]
+    user_role: Optional[str]   # "student" or "admin"
+    user_id: Optional[str]     # EMPLID — only set when user_role == "student"
