@@ -11,6 +11,32 @@ REPORTS_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "reports")
 VALID_BUCKETS = {"61-90", "91-120", "121-150", ">150"}
 
 
+def get_user_role(user_id: str) -> str:
+    """
+    Look up the user's role from AIGravyty_USERS.
+    If found, returns that role (e.g. 'admin', 'staff').
+    If not found, the user is a student — returns 'student'.
+    """
+    from google.cloud import bigquery
+
+    project = os.getenv("BQ_PROJECT_ID", "sjsu-it-genai-poc")
+    dataset = os.getenv("BQ_DATASET_ID", "student_financials")
+    gravyty = f"{project}.{dataset}.AIGravyty_USERS"
+
+    query = f"SELECT ROLE FROM `{gravyty}` WHERE EMPLID = @user_id LIMIT 1"
+    job_config = bigquery.QueryJobConfig(
+        query_parameters=[bigquery.ScalarQueryParameter("user_id", "STRING", user_id)]
+    )
+
+    try:
+        rows = list(_bq_client().query(query, job_config=job_config).result())
+        if rows and rows[0].get("ROLE"):
+            return str(rows[0].get("ROLE")).lower()
+        return "student"
+    except Exception:
+        return "student"
+
+
 @lru_cache(maxsize=1)
 def _bq_client():
     """
@@ -52,9 +78,18 @@ def get_student_balance_bigquery(
     """
     from google.cloud import bigquery
 
-    # Enforce student role — always use the authenticated user_id from state
+    # For students, enforce that they can only query their own records
     if state.get("user_role") == "student":
-        student_id = state.get("user_id") or student_id
+        authenticated_id = state.get("user_id")
+        if authenticated_id and str(student_id).strip() != str(authenticated_id).strip():
+            return [{
+                "error": (
+                    f"Access denied. You are authenticated as student {authenticated_id} "
+                    f"but requested data for student {student_id}. "
+                    f"You can only access your own records."
+                )
+            }]
+        student_id = authenticated_id or student_id
 
     student_id = str(student_id).strip()
     if not student_id:
@@ -223,3 +258,119 @@ def _save_excel_report(data: List[Dict], bucket: Optional[str]) -> str:
 
     return filepath
 
+
+@tool
+def get_student_financial_aid(
+    student_id: str,
+    state: Annotated[dict, InjectedState],
+) -> List[Dict[str, Any]]:
+    """
+    Fetch financial aid records for a student from the FINAID_STDNT_AWARDS table.
+
+    Args:
+        student_id: EMPLID (string). Example: "000775672"
+
+    Returns:
+        List of dicts with keys: student_id, highest_offer_amt, net_award_amt,
+        award_posted, award_status, category
+    """
+    from google.cloud import bigquery
+
+    if state.get("user_role") == "student":
+        authenticated_id = state.get("user_id")
+        if authenticated_id and str(student_id).strip() != str(authenticated_id).strip():
+            return [{
+                "error": (
+                    f"Access denied. You are authenticated as student {authenticated_id} "
+                    f"but requested financial aid for student {student_id}. "
+                    f"You can only access your own records."
+                )
+            }]
+        student_id = authenticated_id or student_id
+
+    student_id = str(student_id).strip()
+
+    project = os.getenv("BQ_PROJECT_ID", "sjsu-it-genai-poc")
+    dataset = os.getenv("BQ_DATASET_ID", "student_financials")
+    table = f"{project}.{dataset}.FINAID_STDNT_AWARDS"
+
+    query = f"""
+    SELECT
+      @student_id                                                      AS student_id,
+      FORMAT('$%.2f', SAFE_CAST(highest_offer_AMT AS FLOAT64))        AS highest_offer_amt,
+      FORMAT('$%.2f', SAFE_CAST(NET_AWARD_AMT AS FLOAT64))            AS net_award_amt,
+      AWARD_POSTED                                                     AS award_posted,
+      AWARD_STATUS                                                     AS award_status,
+      Category                                                         AS category
+    FROM `{table}`
+    WHERE emplid = @student_id
+    """
+
+    job_config = bigquery.QueryJobConfig(
+        query_parameters=[bigquery.ScalarQueryParameter("student_id", "STRING", student_id)]
+    )
+
+    try:
+        rows = list(_bq_client().query(query, job_config=job_config).result())
+        if not rows:
+            return [{"student_id": student_id, "error": "No financial aid records found for this student."}]
+        return [dict(row) for row in rows]
+    except Exception as e:
+        return [{"student_id": student_id, "error": f"{type(e).__name__}: {str(e)}"}]
+
+
+@tool
+def get_student_comments(
+    student_id: str,
+    state: Annotated[dict, InjectedState],
+) -> List[Dict[str, Any]]:
+    """
+    Fetch all comments/notes for a student from the Student_Comment table.
+
+    Args:
+        student_id: EMPLID (string). Example: "000775672"
+
+    Returns:
+        List of dicts with keys: student_id, comment_dt, comment
+    """
+    from google.cloud import bigquery
+
+    if state.get("user_role") == "student":
+        authenticated_id = state.get("user_id")
+        if authenticated_id and str(student_id).strip() != str(authenticated_id).strip():
+            return [{
+                "error": (
+                    f"Access denied. You are authenticated as student {authenticated_id} "
+                    f"but requested comments for student {student_id}. "
+                    f"You can only access your own records."
+                )
+            }]
+        student_id = authenticated_id or student_id
+
+    student_id = str(student_id).strip()
+
+    project = os.getenv("BQ_PROJECT_ID", "sjsu-it-genai-poc")
+    dataset = os.getenv("BQ_DATASET_ID", "student_financials")
+    table = f"{project}.{dataset}.Student_Comment"
+
+    query = f"""
+    SELECT
+      @student_id                                        AS student_id,
+      comment_dt,
+      COMMENTS                                           AS comment
+    FROM `{table}`
+    WHERE emplid = @student_id
+    ORDER BY comment_dt DESC
+    """
+
+    job_config = bigquery.QueryJobConfig(
+        query_parameters=[bigquery.ScalarQueryParameter("student_id", "STRING", student_id)]
+    )
+
+    try:
+        rows = list(_bq_client().query(query, job_config=job_config).result())
+        if not rows:
+            return [{"student_id": student_id, "error": "No comments found for this student."}]
+        return [dict(row) for row in rows]
+    except Exception as e:
+        return [{"student_id": student_id, "error": f"{type(e).__name__}: {str(e)}"}]

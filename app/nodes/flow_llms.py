@@ -2,11 +2,11 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from app.state import State
 from app.tools.sqlite_tools import get_student_by_id
 from app.tools.email_tools import send_email
-from app.tools.bigquery_tools import get_student_balance_bigquery, get_students_past_due_by_bucket
+from app.tools.bigquery_tools import get_student_balance_bigquery, get_students_past_due_by_bucket, get_student_comments, get_student_financial_aid
 
 OUTREACH_TOOLS = [get_students_past_due_by_bucket, send_email]
-QNA_TOOLS = [get_student_by_id, get_student_balance_bigquery, get_students_past_due_by_bucket]
-STUDENT_TOOLS = [get_student_balance_bigquery]
+QNA_TOOLS = [get_student_by_id, get_student_balance_bigquery, get_students_past_due_by_bucket, get_student_comments, get_student_financial_aid]
+STUDENT_TOOLS = [get_student_balance_bigquery, get_student_comments, get_student_financial_aid]
 
 outreach_llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0).bind_tools(OUTREACH_TOOLS)
 qna_llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0).bind_tools(QNA_TOOLS)
@@ -57,6 +57,13 @@ Bucket / listing queries:
 Balance / finance queries:
 - If the user asks about a specific student's balance, use get_student_balance_bigquery(student_id=...).
 - If no student ID is provided, ask for the EMPLID first.
+- The tool returns one record per charge. Display EVERY record individually — never sum them into a total. Show item_descr, item_amt, account_term, and item_effective_dt for each row.
+
+Financial aid:
+- If the user asks about financial aid, awards, scholarships, or grants, use get_student_financial_aid(student_id=...).
+
+Comments / notes:
+- If the user asks about notes, comments, or history on a student account, use get_student_comments(student_id=...).
 
 General:
 - If a tool returns an error field, surface it clearly and suggest the likely fix.
@@ -72,7 +79,7 @@ Rules:
 - You may ONLY answer questions about this student's own account.
 - Always use student_id="{user_id}" when calling any tool. Never use a different student ID.
 - Never discuss other students' records.
-- Display all individual balance records returned by the tool — do not summarize into a single total.
+- Display EVERY balance record returned by the tool individually — never sum them into a total. Show item_descr, item_amt, account_term, and item_effective_dt for each row.
 - If the tool returns a "report_path" field, tell the user an Excel report has been saved there.
 - For questions about policy, payment options, or holds, answer based on your knowledge of SJSU Bursar policy.
 """
@@ -84,7 +91,11 @@ def outreach_agent_node(state: State) -> State:
 
 def qna_agent_node(state: State) -> State:
     msgs = state["messages"]
-    resp = qna_llm.invoke([{"role": "system", "content": QNA_SYSTEM}] + msgs)
+    system = QNA_SYSTEM
+    user_id = state.get("user_id")
+    if user_id:
+        system = f"The current student in context is EMPLID: {user_id}. Use this ID when the user asks about 'the student' or 'their balance' without specifying an ID.\n\n" + system
+    resp = qna_llm.invoke([{"role": "system", "content": system}] + msgs)
     return {"messages": [resp]}
 
 def student_agent_node(state: State) -> State:
