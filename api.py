@@ -8,6 +8,7 @@ logger = logging.getLogger("bursarbot.api")
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from langchain_core.messages import HumanMessage
 
@@ -18,6 +19,14 @@ from app.graph import build_graph  # noqa: E402
 from app.tools.bigquery_tools import get_user_role  # noqa: E402
 
 app = FastAPI(title="BursarBot API", version="0.1.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 graph = build_graph()
 
 
