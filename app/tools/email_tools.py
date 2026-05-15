@@ -5,6 +5,7 @@ from email.mime.multipart import MIMEMultipart
 from typing import Optional
 
 from langchain_core.tools import tool
+from app.tools.email_templates import build_email
 
 
 EMAIL_FROM = os.getenv("BURSARBOT_EMAIL_FROM", "")
@@ -61,3 +62,50 @@ def send_email(to: str, subject: str, body: str) -> str:
         return f"smtp_status=connect_error, error=Failed to connect to Gmail SMTP server, to={actual_to}"
     except Exception as e:
         return f"smtp_status=error, error={str(e)}, to={actual_to}"
+
+
+@tool
+def send_outreach_email(
+    bucket: str,
+    student_name: str,
+    student_id: str,
+    email: str,
+    balance: str,
+    address: str = "",
+    city: str = "",
+    state: str = "",
+    postal: str = "",
+) -> str:
+    """
+    Send an official SJSU Bursar collection notice email using the correct
+    template for the student's aging bucket.
+
+    Args:
+        bucket:       Aging bucket — one of "61-90", "91-120", "121-150".
+        student_name: Full name of the student (first + last).
+        student_id:   Student EMPLID.
+        email:        Student's email address.
+        balance:      Outstanding balance as a string, e.g. "321.84".
+        address:      Street address (optional).
+        city:         City (optional).
+        state:        State abbreviation (optional).
+        postal:       Postal/ZIP code (optional).
+
+    Returns:
+        Status string indicating success or failure.
+    """
+    try:
+        subject, body = build_email(
+            bucket=bucket,
+            student_name=student_name,
+            student_id=student_id,
+            address=address or "—",
+            city=city or "—",
+            state=state or "—",
+            postal=postal or "—",
+            balance=balance,
+        )
+    except ValueError as e:
+        return f"template_error={str(e)}"
+
+    return send_email.invoke({"to": email, "subject": subject, "body": body})

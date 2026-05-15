@@ -26,20 +26,27 @@ def intent_node(state: State) -> State:
     errors = state.get("errors", [])
     entities = state.get("entities", {})
 
-    user_text = ""
-    for m in reversed(state["messages"]):
-        if getattr(m, "type", None) == "human":
-            user_text = m.content
-            break
-        if isinstance(m, dict) and m.get("role") == "user":
-            user_text = m.get("content", "")
-            break
+    # Build last-N-turns context so short follow-ups ("all", "send email", "yes")
+    # are classified correctly using the conversation history.
+    context_msgs = []
+    for m in state["messages"][-8:]:
+        role = getattr(m, "type", None)
+        if role == "human":
+            context_msgs.append({"role": "user", "content": m.content})
+        elif role == "ai":
+            content = getattr(m, "content", "")
+            if isinstance(content, list):
+                content = " ".join(
+                    p.get("text", "") for p in content if isinstance(p, dict)
+                )
+            text = str(content).strip()
+            if text:
+                context_msgs.append({"role": "assistant", "content": text[:300]})
 
     try:
-        out: IntentOutput = intent_llm.invoke([
-            {"role": "system", "content": SYSTEM},
-            {"role": "user", "content": user_text},
-        ])
+        out: IntentOutput = intent_llm.invoke(
+            [{"role": "system", "content": SYSTEM}] + context_msgs
+        )
         intent = out.intent
     except Exception as e:
         intent = "qna"

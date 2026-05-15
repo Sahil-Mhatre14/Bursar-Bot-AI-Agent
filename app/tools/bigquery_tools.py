@@ -203,9 +203,15 @@ def get_students_past_due_by_bucket(
       d.aging_bucket,
       d.payment_status,
       d.reason_codes,
-      d.financial_aid_status
+      d.financial_aid_status,
+      ROUND(COALESCE(bal.total_balance, 0), 2)                            AS balance
     FROM dues d
     LEFT JOIN `{personal}` sp ON sp.EMPLID = d.student_id
+    LEFT JOIN (
+      SELECT emplid, SUM(SAFE_CAST(Balance AS FLOAT64)) AS total_balance
+      FROM `{finance}`
+      GROUP BY emplid
+    ) bal ON bal.emplid = d.student_id
     WHERE d.days_past_due > 0 AND {bucket_filter}
     ORDER BY d.days_past_due DESC
     LIMIT @limit

@@ -4,6 +4,8 @@ import logging
 import uuid
 from typing import Optional, Dict, Any, List
 
+import markdown as md_lib
+
 logger = logging.getLogger("bursarbot.api")
 
 from dotenv import load_dotenv
@@ -22,7 +24,7 @@ app = FastAPI(title="BursarBot API", version="0.1.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["http://localhost:3000", "http://localhost:3001"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -49,6 +51,7 @@ class ChatResponse(BaseModel):
     thread_id: str
     intent: Optional[str] = None
     answer: str
+    answer_html: str
     errors: List[str] = []
 
 
@@ -88,10 +91,17 @@ def chat(req: ChatRequest) -> ChatResponse:
         },
     )
 
+    answer = out.get("result") or ""
+    answer_html = md_lib.markdown(
+        answer,
+        extensions=["tables", "fenced_code", "nl2br", "sane_lists"],
+    )
+
     return ChatResponse(
         thread_id=thread_id,
         intent=out.get("intent"),
-        answer=out.get("result") or "",
+        answer=answer,
+        answer_html=answer_html,
         errors=out.get("errors") or [],
     )
 

@@ -6,7 +6,7 @@ from app.state import State
 from app.nodes.intent import intent_node
 from app.nodes.flow_llms import outreach_agent_node, qna_agent_node, student_agent_node
 from app.tools.sqlite_tools import get_student_by_id
-from app.tools.email_tools import send_email
+from app.tools.email_tools import send_email, send_outreach_email
 from app.tools.bigquery_tools import get_student_balance_bigquery, get_students_past_due_by_bucket, get_student_comments, get_student_financial_aid
 from app.nodes.reset import reset_node
 
@@ -19,6 +19,7 @@ tools_node = ToolNode(
         get_student_comments,
         get_student_financial_aid,
         send_email,
+        send_outreach_email,
     ]
 )
 

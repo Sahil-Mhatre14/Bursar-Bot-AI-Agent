@@ -1,10 +1,10 @@
 from langchain_google_genai import ChatGoogleGenerativeAI
 from app.state import State
 from app.tools.sqlite_tools import get_student_by_id
-from app.tools.email_tools import send_email
+from app.tools.email_tools import send_email, send_outreach_email
 from app.tools.bigquery_tools import get_student_balance_bigquery, get_students_past_due_by_bucket, get_student_comments, get_student_financial_aid
 
-OUTREACH_TOOLS = [get_students_past_due_by_bucket, send_email]
+OUTREACH_TOOLS = [get_students_past_due_by_bucket, send_outreach_email]
 QNA_TOOLS = [get_student_by_id, get_student_balance_bigquery, get_students_past_due_by_bucket, get_student_comments, get_student_financial_aid]
 STUDENT_TOOLS = [get_student_balance_bigquery, get_student_comments, get_student_financial_aid]
 
@@ -31,11 +31,18 @@ When the user asks to fetch, list, or segment students by due date / bucket:
 3) Clearly label which collection notice tier applies to each bucket.
 
 When the user asks to send emails:
-1) First fetch the relevant students using get_students_past_due_by_bucket.
-2) For each student (MAX 5 unless user specifies), call send_email(to, subject, body).
-   - Use the student's email and name from the fetched data.
-   - Email templates per bucket will be provided later. For now use a professional reminder.
-3) Summarize: how many emails sent, which bucket, which student IDs.
+1) First fetch the relevant students using get_students_past_due_by_bucket(bucket=..., limit=5).
+   Always use limit=5 — never send more than 5 emails in one batch.
+2) For each of those students, call send_outreach_email with:
+   - bucket: the aging bucket string (e.g. "61-90")
+   - student_name: first_name + " " + last_name from the fetched data
+   - student_id: student_id from the fetched data
+   - email: email from the fetched data
+   - balance: use the balance field returned by get_students_past_due_by_bucket (it is the student's total outstanding balance from the financials table)
+   - address, city, state, postal: from the fetched data
+   The tool automatically selects the correct official template (CL1/CL2/Final Demand).
+   All buckets including ">150" are supported — Final Demand template is used for ">150".
+3) Summarize: how many emails sent, which bucket (and notice type), which student IDs.
 
 Rules:
 - Never invent student data. Always use tools.
@@ -57,7 +64,19 @@ Bucket / listing queries:
 Balance / finance queries:
 - If the user asks about a specific student's balance, use get_student_balance_bigquery(student_id=...).
 - If no student ID is provided, ask for the EMPLID first.
-- The tool returns one record per charge. Display EVERY record individually — never sum them into a total. Show item_descr, item_amt, account_term, and item_effective_dt for each row.
+- The tool returns one record per charge. Display EVERY record individually — never sum them into a total.
+- Format each balance record as a labeled block (do NOT use bullet points or tables):
+
+  **Balance #N**
+  **Description:** <item_descr>
+  **Date:** <item_effective_dt>
+  **Balance:** $<balance>
+  **Term:** <account_term>
+
+  Leave a blank line between each record.
+- Before listing the records, write one natural intro sentence such as:
+  "Here are the X balance record(s) on file for your account:" (for students)
+  or "Here are the X balance record(s) on file for student [ID]:" (for admin queries).
 
 Financial aid:
 - If the user asks about financial aid, awards, scholarships, or grants, use get_student_financial_aid(student_id=...).
@@ -79,7 +98,19 @@ Rules:
 - You may ONLY answer questions about this student's own account.
 - Always use student_id="{user_id}" when calling any tool. Never use a different student ID.
 - Never discuss other students' records.
-- Display EVERY balance record returned by the tool individually — never sum them into a total. Show item_descr, item_amt, account_term, and item_effective_dt for each row.
+- Display EVERY balance record returned by the tool individually — never sum them into a total.
+- Format each balance record as a labeled block (do NOT use bullet points or tables):
+
+  **Balance #N**
+  **Description:** <item_descr>
+  **Date:** <item_effective_dt>
+  **Balance:** $<balance>
+  **Term:** <account_term>
+
+  Leave a blank line between each record.
+- Before listing the records, write one natural intro sentence such as:
+  "Here are the X balance record(s) on file for your account:" (for students)
+  or "Here are the X balance record(s) on file for student [ID]:" (for admin queries).
 - If the tool returns a "report_path" field, tell the user an Excel report has been saved there.
 - For questions about policy, payment options, or holds, answer based on your knowledge of SJSU Bursar policy.
 """
@@ -94,7 +125,12 @@ def qna_agent_node(state: State) -> State:
     system = QNA_SYSTEM
     user_id = state.get("user_id")
     if user_id:
-        system = f"The current student in context is EMPLID: {user_id}. Use this ID when the user asks about 'the student' or 'their balance' without specifying an ID.\n\n" + system
+        system = (
+            f"CRITICAL: The authenticated user's EMPLID is {user_id}. "
+            f"Whenever the user says 'my balance', 'my account', 'my financial aid', 'my holds', "
+            f"or any first-person reference to their own account — ALWAYS call the tool immediately "
+            f"with student_id='{user_id}'. NEVER ask them to provide their EMPLID.\n\n"
+        ) + system
     resp = qna_llm.invoke([{"role": "system", "content": system}] + msgs)
     return {"messages": [resp]}
 
