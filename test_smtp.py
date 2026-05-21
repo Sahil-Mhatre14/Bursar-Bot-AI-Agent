@@ -12,33 +12,33 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-EMAIL_FROM = os.getenv("BURSARBOT_EMAIL_FROM", "")
+SENDER_EMAIL = os.getenv("SENDER_EMAIL", "")
 EMAIL_PASSWORD = os.getenv("BURSARBOT_EMAIL_PASSWORD", "")
-OVERRIDE_TO = os.getenv("BURSARBOT_EMAIL_OVERRIDE_TO", "")
+RECEIVER_EMAIL = os.getenv("RECEIVER_EMAIL", "")
 
 def test_smtp_connection():
     print("Testing Gmail SMTP connection...")
 
-    if not EMAIL_FROM:
-        print("❌ ERROR: BURSARBOT_EMAIL_FROM not set")
+    if not SENDER_EMAIL:
+        print("❌ ERROR: SENDER_EMAIL not set")
         return
 
     if not EMAIL_PASSWORD:
         print("❌ ERROR: BURSARBOT_EMAIL_PASSWORD not set")
         return
 
-    if not OVERRIDE_TO:
-        print("❌ ERROR: BURSARBOT_EMAIL_OVERRIDE_TO not set")
+    if not RECEIVER_EMAIL:
+        print("❌ ERROR: RECEIVER_EMAIL not set")
         return
 
-    print(f"📧 From: {EMAIL_FROM}")
-    print(f"📧 To: {OVERRIDE_TO}")
+    print(f"📧 From: {SENDER_EMAIL}")
+    print(f"📧 To: {RECEIVER_EMAIL}")
     print(f"🔑 Password length: {len(EMAIL_PASSWORD)} characters")
 
     # Create test message
     msg = MIMEMultipart()
-    msg['From'] = EMAIL_FROM
-    msg['To'] = OVERRIDE_TO
+    msg['From'] = SENDER_EMAIL
+    msg['To'] = RECEIVER_EMAIL
     msg['Subject'] = "SMTP Test - Bursar Bot"
 
     msg.attach(MIMEText("This is a test email from Bursar Bot SMTP configuration.", 'plain'))
@@ -52,15 +52,15 @@ def test_smtp_connection():
         clean_password = EMAIL_PASSWORD.replace(" ", "")
         print(f"🔐 Attempting login with cleaned password (length: {len(clean_password)})...")
 
-        server.login(EMAIL_FROM, clean_password)
+        server.login(SENDER_EMAIL, clean_password)
         print("✅ Authentication successful!")
 
         text = msg.as_string()
-        server.sendmail(EMAIL_FROM, OVERRIDE_TO, text)
+        server.sendmail(SENDER_EMAIL, RECEIVER_EMAIL, text)
         server.quit()
 
         print("✅ Test email sent successfully!")
-        print(f"📬 Check {OVERRIDE_TO} for the test email")
+        print(f"📬 Check {RECEIVER_EMAIL} for the test email")
 
     except smtplib.SMTPAuthenticationError as e:
         print(f"❌ AUTHENTICATION ERROR: {e}")

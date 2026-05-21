@@ -262,7 +262,9 @@ def _save_excel_report(data: List[Dict], bucket: Optional[str]) -> str:
             max_len = max(len(str(cell.value or "")) for cell in col)
             ws.column_dimensions[col[0].column_letter].width = min(max_len + 2, 40)
 
-    return filepath
+    # Return a direct backend URL — frontend calls the backend directly (no proxy)
+    backend = os.getenv("BURSARBOT_BACKEND_URL", "http://localhost:8001")
+    return f"{backend}/reports/{filename}"
 
 
 @tool

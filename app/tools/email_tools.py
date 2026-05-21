@@ -8,14 +8,16 @@ from langchain_core.tools import tool
 from app.tools.email_templates import build_email
 
 
-EMAIL_FROM = os.getenv("BURSARBOT_EMAIL_FROM", "")
+SENDER_EMAIL = os.getenv("SENDER_EMAIL", "")
 EMAIL_PASSWORD = os.getenv("BURSARBOT_EMAIL_PASSWORD", "")  # For Gmail App Password
-OVERRIDE_TO = os.getenv("BURSARBOT_EMAIL_OVERRIDE_TO", "sahil.mhatre@sjsu.edu")
+RECEIVER_EMAIL = os.getenv("RECEIVER_EMAIL", "")
 
 
 def _require_env():
-    if not EMAIL_FROM:
-        raise RuntimeError("Missing BURSARBOT_EMAIL_FROM in environment.")
+    if not SENDER_EMAIL:
+        raise RuntimeError("Missing SENDER_EMAIL in environment.")
+    if not RECEIVER_EMAIL:
+        raise RuntimeError("Missing RECEIVER_EMAIL in environment.")
     if not EMAIL_PASSWORD:
         raise RuntimeError("Missing BURSARBOT_EMAIL_PASSWORD in environment (use Gmail App Password for Gmail).")
 
@@ -24,17 +26,17 @@ def _require_env():
 def send_email(to: str, subject: str, body: str) -> str:
     """
     Send an email via native Python SMTP.
-    Demo safety: ALWAYS overrides recipient to BURSARBOT_EMAIL_OVERRIDE_TO (default: sahil.mhatre@sjsu.edu).
+    Demo safety: ALWAYS overrides recipient to RECEIVER_EMAIL.
 
     Returns a short status string.
     """
     _require_env()
 
-    actual_to = OVERRIDE_TO.strip()
+    actual_to = RECEIVER_EMAIL.strip()
 
     # Create message
     msg = MIMEMultipart()
-    msg['From'] = EMAIL_FROM
+    msg['From'] = SENDER_EMAIL
     msg['To'] = actual_to
     msg['Subject'] = subject
 
@@ -51,9 +53,9 @@ def send_email(to: str, subject: str, body: str) -> str:
         if len(clean_password) != 16:
             return f"smtp_status=error, error=App Password must be exactly 16 characters (got {len(clean_password)}), to={actual_to}"
 
-        server.login(EMAIL_FROM, clean_password)
+        server.login(SENDER_EMAIL, clean_password)
         text = msg.as_string()
-        server.sendmail(EMAIL_FROM, actual_to, text)
+        server.sendmail(SENDER_EMAIL, actual_to, text)
         server.quit()
         return f"smtp_status=success, to={actual_to}"
     except smtplib.SMTPAuthenticationError as e:

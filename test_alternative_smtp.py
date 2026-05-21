@@ -38,21 +38,21 @@ MAILHOG_SMTP = {
 # Current config (update this based on your choice)
 SMTP_CONFIG = MAILTRAP_SMTP  # Change to MAILHOG_SMTP if using local
 
-OVERRIDE_TO = os.getenv("BURSARBOT_EMAIL_OVERRIDE_TO", "")
+RECEIVER_EMAIL = os.getenv("RECEIVER_EMAIL", "")
 
 def test_alternative_smtp():
     print("Testing alternative SMTP setup...")
-    print(f"📧 To: {OVERRIDE_TO}")
+    print(f"📧 To: {RECEIVER_EMAIL}")
     print(f"🔌 Server: {SMTP_CONFIG['server']}:{SMTP_CONFIG['port']}")
 
-    if not OVERRIDE_TO:
-        print("❌ ERROR: BURSARBOT_EMAIL_OVERRIDE_TO not set")
+    if not RECEIVER_EMAIL:
+        print("❌ ERROR: RECEIVER_EMAIL not set")
         return
 
     # Create test message
     msg = MIMEMultipart()
     msg['From'] = 'bursarbot@test.com'  # Can be anything for testing services
-    msg['To'] = OVERRIDE_TO
+    msg['To'] = RECEIVER_EMAIL
     msg['Subject'] = "SMTP Test - Alternative Setup"
 
     msg.attach(MIMEText("This is a test email using alternative SMTP setup.", 'plain'))
@@ -67,11 +67,11 @@ def test_alternative_smtp():
             print("✅ Authentication successful!")
 
         text = msg.as_string()
-        server.sendmail(msg['From'], OVERRIDE_TO, text)
+        server.sendmail(msg['From'], RECEIVER_EMAIL, text)
         server.quit()
 
         print("✅ Test email sent successfully!")
-        print(f"📬 Check {OVERRIDE_TO} for the test email")
+        print(f"📬 Check {RECEIVER_EMAIL} for the test email")
 
     except Exception as e:
         print(f"❌ ERROR: {e}")

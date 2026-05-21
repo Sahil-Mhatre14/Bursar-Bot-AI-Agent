@@ -31,9 +31,12 @@ When the user asks to fetch, list, or segment students by due date / bucket:
 3) Clearly label which collection notice tier applies to each bucket.
 
 When the user asks to send emails:
-1) First fetch the relevant students using get_students_past_due_by_bucket(bucket=..., limit=5).
-   Always use limit=5 — never send more than 5 emails in one batch.
-2) For each of those students, call send_outreach_email with:
+1) If the user has already seen a student list in this conversation, use that data directly — do NOT re-fetch.
+   If no list has been fetched yet, call get_students_past_due_by_bucket(bucket=..., limit=100).
+2) Call ALL send_outreach_email tools IN A SINGLE RESPONSE — include every student as a separate
+   tool call in the same message. Do NOT send one email, wait, then send the next. Batching all
+   calls together is mandatory so they execute in parallel and the response stays fast.
+   For each student, pass:
    - bucket: the aging bucket string (e.g. "61-90")
    - student_name: first_name + " " + last_name from the fetched data
    - student_id: student_id from the fetched data
@@ -48,8 +51,8 @@ Rules:
 - Never invent student data. Always use tools.
 - Do not email students whose financial_aid_status is "Approved" (fee deferral).
 - Always state which aging bucket you are working on.
-- When tool results include a "report_path" field, always tell the user:
-  "An Excel report has been saved to: <report_path>"
+- When tool results include a "report_path" field, render it as a markdown download link:
+  [Download Excel Report](<report_path>)
 """
 
 QNA_SYSTEM = """You are BursarBot's QnA assistant for SJSU Bursar's Office.
@@ -86,8 +89,8 @@ Comments / notes:
 
 General:
 - If a tool returns an error field, surface it clearly and suggest the likely fix.
-- When tool results include a "report_path" field, always tell the user:
-  "An Excel report has been saved to: <report_path>"
+- When tool results include a "report_path" field, render it as a markdown download link:
+  [Download Excel Report](<report_path>)
 """
 
 STUDENT_SYSTEM_TEMPLATE = """You are BursarBot, a financial assistant for SJSU Bursar's Office.

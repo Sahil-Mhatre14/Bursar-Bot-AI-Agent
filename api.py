@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import uuid
 from typing import Optional, Dict, Any, List
 
@@ -11,8 +12,11 @@ logger = logging.getLogger("bursarbot.api")
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from langchain_core.messages import HumanMessage
+
+REPORTS_DIR = os.path.join(os.path.dirname(__file__), "reports")
 
 # IMPORTANT: load .env BEFORE importing anything that instantiates LLM clients.
 load_dotenv()
@@ -60,6 +64,21 @@ def health() -> Dict[str, str]:
     return {"status": "ok"}
 
 
+@app.get("/reports/{filename}")
+def download_report(filename: str) -> FileResponse:
+    # Prevent path traversal
+    if ".." in filename or "/" in filename:
+        raise HTTPException(status_code=400, detail="Invalid filename.")
+    filepath = os.path.join(REPORTS_DIR, filename)
+    if not os.path.exists(filepath):
+        raise HTTPException(status_code=404, detail="Report not found.")
+    return FileResponse(
+        filepath,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        filename=filename,
+    )
+
+
 @app.post("/chat", response_model=ChatResponse)
 def chat(req: ChatRequest) -> ChatResponse:
     thread_id = req.thread_id or str(uuid.uuid4())
@@ -88,6 +107,7 @@ def chat(req: ChatRequest) -> ChatResponse:
             "tags": ["api", "bursarbot"],
             "metadata": req.metadata or {"entrypoint": "api.py"},
             "run_name": "bursarbot_api_turn",
+            "recursion_limit": 100,
         },
     )
 
